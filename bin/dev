@@ -1,0 +1,10 @@
+#!/bin/sh
+# Run a command inside the drust dev container (PHP 8.3 + Rust), with the repo at /work.
+# The Rust extension is loaded via docker/php.d/drust.ini once it has been built.
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+TTY=""; [ -t 0 ] && [ -t 1 ] && TTY="-it"
+exec docker run --rm $TTY --shm-size=1g -v "$ROOT":/work \
+  -v drust-cargo:/usr/local/cargo/registry -v drust-target:/work/ext/target \
+  -v drust-composer:/root/.cache/composer \
+  -e PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d:/work/docker/php.d \
+  ${DRUST_DOCKER_ARGS:-} -w "/work/${DRUST_WORKDIR:-drupal}" drust-dev "$@"

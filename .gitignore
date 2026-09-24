@@ -1,0 +1,15 @@
+/ext/target/
+/ext/drust.so
+/drupal/vendor/
+/drupal/web/core/
+/drupal/web/modules/contrib/
+/drupal/web/themes/contrib/
+/drupal/web/sites/*/files/
+/ext/dist/
+# Local site settings hold the hash salt; drust's dev settings are in
+# settings.drust-dev.php instead.
+/drupal/web/sites/*/settings.php
+/drupal/web/sites/*/settings.local.php
+# Raw profiler output (~27MB, regenerable with bench/profile/run.sh); the
+# conclusions are in FINDINGS.md.
+/bench/profile/results/

@@ -65,7 +65,7 @@ Requirements: Drupal 11, PHP 8.3+ (NTS) on Linux, a single web server.
 | `drupal/web/modules/custom/drust/` | The Drupal module and its tests |
 | `drupal/` | A local Drupal 11 test site (SQLite) |
 | `docker/` | Dev image: PHP 8.5 + Rust + Composer |
-| `bin/` | `dev`, `build-ext`, `build-ext-linux`, `bench`, `deploy-drupal02` |
+| `bin/` | `setup-dev`, `dev`, `build-ext`, `build-ext-linux`, `bench`, `deploy-drupal02` |
 | `bench/` | Benchmark scripts, content generator, raw results; `profile/` has the Excimer profiling tools |
 | `deploy/server/` | PHP-FPM pools, Drush wrapper and settings used on the benchmark host |
 | [FINDINGS.md](FINDINGS.md) | Every bug, fix, gotcha and design lesson so far |
@@ -75,8 +75,8 @@ Requirements: Drupal 11, PHP 8.3+ (NTS) on Linux, a single web server.
 Everything runs in Docker; nothing needs installing on your machine.
 
 ```sh
-docker build -t drust-dev docker     # PHP 8.5 + Rust dev image
-bin/build-ext                        # build ext/drust.so for the dev image
+bin/setup-dev                        # from a fresh clone: image, Composer, extension, site, content
+bin/build-ext                        # rebuild ext/drust.so after changing Rust code
 bin/dev vendor/bin/drush status      # run anything against the local site
 
 # The test suite (core's suites against drust, plus drust's own):
@@ -85,10 +85,12 @@ bin/dev sh -c 'SIMPLETEST_DB=sqlite://localhost//tmp/test.sqlite \
   -c web/core/phpunit.xml.dist web/modules/custom/drust/tests'
 ```
 
-The local site uses the `standard` profile plus the `standard`,
-`article_tags`, `article_comment` and `page_content_type` recipes (in Drupal
-11.4 the profile no longer creates content types). `bench/generate.php`
-creates 100 tagged articles with 300 comments. Admin login: `admin` / `admin`.
+`bin/setup-dev` installs the local site with the `standard` profile plus the
+`standard`, `article_tags`, `article_comment` and `page_content_type` recipes
+(in Drupal 11.4 the profile no longer creates content types), enables drust and
+generates 100 tagged articles with 300 comments. Admin login: `admin` /
+`admin`. The site's `settings.php` isn't committed (it holds the hash salt);
+drust's dev settings are in `sites/default/settings.drust-dev.php`.
 
 Locally, the `DRUST_CACHE` environment variable picks the cache mode:
 

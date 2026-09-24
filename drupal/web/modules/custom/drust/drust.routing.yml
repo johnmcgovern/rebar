@@ -1,0 +1,7 @@
+drust.status:
+  path: '/admin/reports/drust'
+  defaults:
+    _controller: '\Drupal\drust\Controller\StatusController::status'
+    _title: 'Drust (Rust services)'
+  requirements:
+    _permission: 'access site reports'

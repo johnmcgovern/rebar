@@ -1,0 +1,5 @@
+drust.status:
+  title: 'Drust'
+  description: 'Status of the Rust-backed services.'
+  route_name: drust.status
+  parent: system.admin_reports

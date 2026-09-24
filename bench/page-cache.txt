@@ -1,0 +1,14 @@
+
+== cache backend: database (page_cache=1) ==
+path                    status   median      p95     mean     KB
+/                          200    3.49ms    4.26ms    3.54ms   34.5   (first hit 744ms)
+/node/150                  200    3.40ms    3.99ms    3.40ms   17.2   (first hit 111ms)
+/taxonomy/term/30          200    3.41ms    3.97ms    3.42ms   32.5   (first hit 153ms)
+/rss.xml                   200    3.34ms    3.96ms    3.37ms    6.2   (first hit 61ms)
+
+== cache backend: drust (page_cache=1) ==
+path                    status   median      p95     mean     KB
+/                          200    3.33ms    3.82ms    3.32ms   34.5   (first hit 677ms)
+/node/150                  200    3.37ms    4.08ms    3.41ms   17.2   (first hit 97ms)
+/taxonomy/term/30          200    3.49ms    4.08ms    3.50ms   32.5   (first hit 118ms)
+/rss.xml                   200    3.38ms    4.05ms    3.40ms    6.2   (first hit 44ms)

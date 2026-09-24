@@ -1,0 +1,17 @@
+#!/bin/sh
+# Benchmark the site with each cache backend: database, drust (Rust only) and
+# chained (Rust in front of the database).
+# Usage: bin/bench [requests-per-url]   (PAGE_CACHE=0 uninstalls page_cache first)
+N="${1:-200}"
+PATHS="/ /node/150 /taxonomy/term/30 /rss.xml"
+"$(dirname "$0")/dev" sh -c "
+  if [ \"${PAGE_CACHE:-1}\" = 0 ]; then vendor/bin/drush pmu page_cache -y -q; else vendor/bin/drush en page_cache -y -q; fi
+  for mode in database 1 chained; do
+    export DRUST_CACHE=\$mode
+    vendor/bin/drush cr -q
+    (cd web && exec php -d opcache.enable=1 -d opcache.enable_cli=1 -S 127.0.0.1:8888 .ht.router.php >/dev/null 2>&1) & SRV=\$!
+    sleep 1
+    echo; echo \"== DRUST_CACHE=\$mode (page_cache=${PAGE_CACHE:-1}) ==\"
+    php /work/bench/bench.php http://127.0.0.1:8888 $N $PATHS
+    kill \$SRV; wait \$SRV 2>/dev/null || true
+  done"

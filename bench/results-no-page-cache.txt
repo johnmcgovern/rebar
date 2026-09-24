@@ -1,0 +1,28 @@
+
+In PmCommands.php line 198:
+                                                                               
+  The following module(s) are not installed: page_cache. No modules to uninst  
+  all.                                                                         
+                                                                               
+
+
+== DRUST_CACHE=database (page_cache=0) ==
+path                    status   median      p95     mean     KB
+/                          200    9.12ms   10.99ms    9.30ms   34.5   (first hit 748ms)
+/node/150                  200   13.39ms   16.14ms   13.70ms   17.3   (first hit 108ms)
+/taxonomy/term/30          200   10.67ms   17.57ms   11.58ms   32.5   (first hit 128ms)
+/rss.xml                   200    7.54ms    9.22ms    7.73ms    6.2   (first hit 47ms)
+
+== DRUST_CACHE=1 (page_cache=0) ==
+path                    status   median      p95     mean     KB
+/                          200    6.90ms    8.14ms    7.08ms   34.5   (first hit 685ms)
+/node/150                  200    9.86ms   11.11ms    9.85ms   17.2   (first hit 82ms)
+/taxonomy/term/30          200    7.75ms    9.96ms    8.07ms   32.5   (first hit 101ms)
+/rss.xml                   200    6.62ms    7.96ms    6.83ms    6.2   (first hit 34ms)
+
+== DRUST_CACHE=chained (page_cache=0) ==
+path                    status   median      p95     mean     KB
+/                          200    7.80ms   10.86ms    8.29ms   34.5   (first hit 727ms)
+/node/150                  200   11.96ms   15.33ms   12.19ms   17.3   (first hit 111ms)
+/taxonomy/term/30          200    9.13ms   11.85ms    9.44ms   32.5   (first hit 131ms)
+/rss.xml                   200    7.18ms    8.87ms    7.37ms    6.2   (first hit 47ms)

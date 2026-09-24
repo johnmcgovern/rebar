@@ -1,0 +1,25 @@
+# 2026-09-24T08:15:00+00:00 n=300 c=4 rounds=2
+round=1 mode=anon drupal01 / rps=1610.20 p50=2ms p95=4ms p99=4ms failed=0 non2xx=0
+round=1 mode=anon drupal02 / rps=1937.18 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=1 mode=anon drupal01 /node/51 rps=1977.16 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=1 mode=anon drupal02 /node/51 rps=2208.30 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=1 mode=anon drupal01 /taxonomy/term/10 rps=1947.60 p50=2ms p95=3ms p99=4ms failed=0 non2xx=0
+round=1 mode=anon drupal02 /taxonomy/term/10 rps=2361.33 p50=2ms p95=2ms p99=3ms failed=0 non2xx=0
+round=1 mode=auth drupal01 / rps=348.83 p50=11ms p95=14ms p99=15ms failed=0 non2xx=0
+round=1 mode=auth drupal02 / rps=459.73 p50=8ms p95=10ms p99=12ms failed=0 non2xx=0
+round=1 mode=auth drupal01 /node/51 rps=143.41 p50=27ms p95=32ms p99=38ms failed=0 non2xx=0
+round=1 mode=auth drupal02 /node/51 rps=167.20 p50=23ms p95=26ms p99=29ms failed=0 non2xx=0
+round=1 mode=auth drupal01 /taxonomy/term/10 rps=318.37 p50=12ms p95=15ms p99=16ms failed=0 non2xx=0
+round=1 mode=auth drupal02 /taxonomy/term/10 rps=429.07 p50=9ms p95=11ms p99=14ms failed=0 non2xx=0
+round=2 mode=anon drupal01 / rps=1888.70 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=2 mode=anon drupal02 / rps=2122.57 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=2 mode=anon drupal01 /node/51 rps=1922.40 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=2 mode=anon drupal02 /node/51 rps=2406.60 p50=2ms p95=3ms p99=3ms failed=0 non2xx=0
+round=2 mode=anon drupal01 /taxonomy/term/10 rps=1831.49 p50=2ms p95=3ms p99=4ms failed=0 non2xx=0
+round=2 mode=anon drupal02 /taxonomy/term/10 rps=2113.64 p50=2ms p95=3ms p99=4ms failed=0 non2xx=0
+round=2 mode=auth drupal01 / rps=339.12 p50=11ms p95=17ms p99=24ms failed=0 non2xx=0
+round=2 mode=auth drupal02 / rps=439.53 p50=9ms p95=11ms p99=14ms failed=0 non2xx=0
+round=2 mode=auth drupal01 /node/51 rps=151.01 p50=26ms p95=32ms p99=35ms failed=0 non2xx=0
+round=2 mode=auth drupal02 /node/51 rps=169.10 p50=23ms p95=26ms p99=28ms failed=0 non2xx=0
+round=2 mode=auth drupal01 /taxonomy/term/10 rps=330.61 p50=12ms p95=15ms p99=20ms failed=0 non2xx=0
+round=2 mode=auth drupal02 /taxonomy/term/10 rps=399.84 p50=9ms p95=16ms p99=19ms failed=0 non2xx=0

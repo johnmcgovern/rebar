@@ -1,0 +1,21 @@
+#!/bin/sh
+# Deploys drust to drupal02.example.com on server: the extension, the Drupal
+# module and bin/drush. Then reloads PHP-FPM and rebuilds Drupal's caches.
+# Build first with bin/build-ext-linux.
+set -e
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+HOST=server.example.com
+SITE=/var/www/drupal02.example.com
+SO="$ROOT/ext/dist/drust-php8.5-x86_64.so"
+[ -f "$SO" ] || { echo "missing $SO; run bin/build-ext-linux" >&2; exit 1; }
+
+# Running workers have drust.so mapped: overwriting it in place could crash
+# them. Upload beside it and rename, so they keep the old inode until reload.
+scp -q "$SO" "$HOST:$SITE/drust/drust.so.new"
+scp -q "$ROOT/deploy/server/drush" "$HOST:$SITE/bin/drush"
+rsync -a --delete --exclude tests "$ROOT/drupal/web/modules/custom/drust/" "$HOST:$SITE/web/modules/custom/drust/"
+ssh -o BatchMode=yes "$HOST" "set -e
+  chmod 644 $SITE/drust/drust.so.new && mv $SITE/drust/drust.so.new $SITE/drust/drust.so
+  sudo systemctl reload php8.5-fpm
+  cd $SITE && sudo -u www-data bin/drush cr -q
+  echo \"deployed: \$(sudo -u www-data bin/drush php:eval 'echo drust_hello(\"drupal02\");')\""

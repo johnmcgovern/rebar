@@ -1,0 +1,8 @@
+#!/bin/sh
+# Build the Rust PHP extension and copy it to ext/drust.so.
+# Each PHP API version gets its own cargo target dir: ext-php-rs's build
+# script doesn't rerun when PHP changes, so a shared one keeps stale builds.
+set -e
+DRUST_WORKDIR=ext "$(dirname "$0")/dev" sh -c '
+  export CARGO_TARGET_DIR=target/php$(php -n -r "echo PHP_MAJOR_VERSION, \".\", PHP_MINOR_VERSION;")
+  cargo build --release && cp $CARGO_TARGET_DIR/release/libdrust.so drust.so'

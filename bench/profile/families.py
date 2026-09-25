@@ -18,7 +18,7 @@ FAMILIES = {
     "Twig templates": r"^__TwigTemplate_",
     "cache reads (RustBackend::getMultiple)": r"RustBackend::getMultiple",
     "unserialize (cache payloads)": r"^unserialize$|PhpSerialize::decode",
-    "Rust calls (drust_*)": r"^drust_",
+    "Rust calls (rebar_*)": r"^rebar_",
     "database queries": r"StatementBase::clientExecute",
     "container get/create": r"Drupal\\Component\\DependencyInjection\\Container::(get|createService)",
     "class autoloading": r"Composer\\Autoload\\ClassLoader::loadClass",

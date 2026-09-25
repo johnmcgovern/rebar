@@ -1,13 +1,13 @@
 #!/bin/bash
 # Profiles drupal02 pages with Excimer (on server, with profiling enabled in
-# the drupal02 pool). Writes <site>/drust/profile/<mode>_<page>.folded.
+# the drupal02 pool). Writes <site>/rebar/profile/<mode>_<page>.folded.
 # Usage: run.sh [requests-per-page]
 set -euo pipefail
 N="${1:-200}"
 SITE=/var/www/drupal02.example.com
 HOST=drupal02.example.com
 JAR=$(mktemp); trap 'rm -f "$JAR"' EXIT
-rm -f "$SITE"/drust/profile/*.folded
+rm -f "$SITE"/rebar/profile/*.folded
 
 # Settle cron first, as remote-bench.sh does, so it can't run mid-profile.
 DRUSH="sudo -u www-data $SITE/bin/drush"
@@ -28,7 +28,7 @@ for mode in auth anon; do
     label="${mode}_$(echo "$path" | tr -c 'a-z0-9\n' '_' | sed 's/^_*//; s/_*$//')"
     label="${label%_}"; [ "$path" = / ] && label="${mode}_front"
     ab "${args[@]}" -n 40 "http://127.0.0.1$path" >/dev/null
-    ab "${args[@]}" -n "$N" -H "X-Drust-Profile: $label" "http://127.0.0.1$path" | awk -v l="$label" '/^Requests per second/ {print l, $4 " req/s while profiling"}'
+    ab "${args[@]}" -n "$N" -H "X-Rebar-Profile: $label" "http://127.0.0.1$path" | awk -v l="$label" '/^Requests per second/ {print l, $4 " req/s while profiling"}'
   done
 done
-ls -la "$SITE"/drust/profile/
+ls -la "$SITE"/rebar/profile/

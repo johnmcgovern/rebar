@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\drust\Cache;
+namespace Drupal\rebar\Cache;
 
 use Drupal\Component\Datetime\TimeInterface;
 use Drupal\Core\Cache\CacheFactoryInterface;
@@ -8,18 +8,18 @@ use Drupal\Core\Cache\CacheTagsChecksumInterface;
 use Drupal\Core\Site\Settings;
 
 /**
- * Creates cache bins stored in the drust Rust extension.
+ * Creates cache bins stored in the rebar Rust extension.
  *
  * Enable in settings.php with one of:
  * @code
  * // Private to each PHP process.
- * $settings['cache']['default'] = 'cache.backend.drust';
+ * $settings['cache']['default'] = 'cache.backend.rebar';
  * // Shared by all PHP processes on the machine.
- * $settings['cache']['default'] = 'cache.backend.drust_shared';
+ * $settings['cache']['default'] = 'cache.backend.rebar_shared';
  * // Optional, for the shared store (defaults shown). The path should be on
  * // tmpfs, and the tmpfs must be larger than the map size.
- * $settings['drust']['shared_path'] = '/dev/shm/drust';
- * $settings['drust']['shared_size_mb'] = 256;
+ * $settings['rebar']['shared_path'] = '/dev/shm/rebar';
+ * $settings['rebar']['shared_size_mb'] = 256;
  * @endcode
  */
 class RustBackendFactory implements CacheFactoryInterface {
@@ -41,7 +41,7 @@ class RustBackendFactory implements CacheFactoryInterface {
     protected TimeInterface $time,
     string $store = 'local',
   ) {
-    $this->sitePrefix = Settings::getApcuPrefix('drust_backend', $root, $site_path);
+    $this->sitePrefix = Settings::getApcuPrefix('rebar_backend', $root, $site_path);
     $this->store = $store === 'shared' ? static::openSharedStore() : $store;
   }
 
@@ -49,9 +49,9 @@ class RustBackendFactory implements CacheFactoryInterface {
    * Opens the shared store configured in settings.php and returns its path.
    */
   public static function openSharedStore(): string {
-    $settings = Settings::get('drust', []);
-    $path = $settings['shared_path'] ?? '/dev/shm/drust';
-    drust_shared_open($path, $settings['shared_size_mb'] ?? 256);
+    $settings = Settings::get('rebar', []);
+    $path = $settings['shared_path'] ?? '/dev/shm/rebar';
+    rebar_shared_open($path, $settings['shared_size_mb'] ?? 256);
     return $path;
   }
 

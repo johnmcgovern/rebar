@@ -1,0 +1,7 @@
+Rebar.status:
+  path: '/admin/reports/rebar'
+  defaults:
+    _controller: '\Drupal\rebar\Controller\StatusController::status'
+    _title: 'Rebar (Rust services)'
+  requirements:
+    _permission: 'access site reports'

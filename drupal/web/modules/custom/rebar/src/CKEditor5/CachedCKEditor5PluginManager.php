@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\drust\CKEditor5;
+namespace Drupal\rebar\CKEditor5;
 
 use Drupal\ckeditor5\Plugin\CKEditor5PluginManager;
 use Drupal\Core\Cache\Cache;
@@ -21,15 +21,15 @@ use Drupal\editor\EditorInterface;
  * not their IDs: the CKEditor 5 admin form validates unsaved, modified pairs.
  * Only plugin IDs are cached; definitions come from getDefinitions() as usual.
  *
- * Enabled with $settings['drust']['ckeditor5_cache'] = TRUE (see
- * DrustServiceProvider).
+ * Enabled with $settings['rebar']['ckeditor5_cache'] = TRUE (see
+ * RebarServiceProvider).
  */
 class CachedCKEditor5PluginManager extends CKEditor5PluginManager {
 
   /**
    * Cache tag for every cached result; invalidated with the definitions.
    */
-  const CACHE_TAG = 'drust_ckeditor5_enabled_definitions';
+  const CACHE_TAG = 'rebar_ckeditor5_enabled_definitions';
 
   /**
    * Enabled plugin IDs by cache ID, for the rest of this request.
@@ -47,7 +47,7 @@ class CachedCKEditor5PluginManager extends CKEditor5PluginManager {
     if ($format === NULL) {
       return parent::getEnabledDefinitions($editor);
     }
-    $cid = 'drust:ckeditor5:enabled:' . hash('xxh128', serialize([$editor->toArray(), $format->toArray()]));
+    $cid = 'rebar:ckeditor5:enabled:' . hash('xxh128', serialize([$editor->toArray(), $format->toArray()]));
     if (!isset($this->enabledPluginIds[$cid])) {
       if ($cached = $this->cacheBackend->get($cid)) {
         $this->enabledPluginIds[$cid] = $cached->data;

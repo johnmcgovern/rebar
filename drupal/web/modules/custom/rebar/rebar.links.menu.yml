@@ -1,5 +1,5 @@
-drust.status:
-  title: 'Drust'
+Rebar.status:
+  title: 'Rebar'
   description: 'Status of the Rust-backed services.'
-  route_name: drust.status
+  route_name: rebar.status
   parent: system.admin_reports

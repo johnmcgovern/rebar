@@ -1,7 +1,7 @@
 # Findings
 
 A running log of bugs, fixes, gotchas and architectural learnings from the
-drust experiments. Newest entries go at the bottom of each section.
+Rebar experiments. Newest entries go at the bottom of each section.
 
 ## Architecture
 
@@ -26,7 +26,7 @@ collection. Passing serialized strings avoids converting arbitrary PHP object
 graphs to Rust types.
 
 ### A per-process store is unsafe with more than one PHP process
-With `DRUST_CACHE=1` every bin lives in Rust memory inside one PHP process.
+With `REBAR_CACHE=1` every bin lives in Rust memory inside one PHP process.
 Writes and deletes from another process (Drush, other FPM workers) never reach
 it. Reproduced: `drush cset system.site name ...` followed by `drush cr` left the
 web server showing the old name indefinitely. Tag invalidations do propagate,
@@ -37,8 +37,8 @@ The config cache bin is updated with `set()`, so config changes go stale.
 Core already solves this for APCu: `ChainedFastBackend` writes to a consistent
 backend (the database) and records a per-bin "last write" timestamp there; each
 process ignores fast-backend items created before it. Registering
-`ChainedFastBackendFactory` with `cache.backend.drust` as the fast service
-(`cache.backend.drust_chained`) made config changes from Drush show up on the
+`ChainedFastBackendFactory` with `cache.backend.rebar` as the fast service
+(`cache.backend.rebar_chained`) made config changes from Drush show up on the
 next web request. Cost: it gives back roughly half the speed gain, because
 misses and the timestamp check still hit the database, and every write goes to
 both stores.
@@ -69,9 +69,9 @@ preloading, and delaying invalidations until the database transaction commits
 (so another request can't cache stale data before the commit). It only needs
 two storage primitives: read counts, increment counts. `RustCacheTagsChecksum`
 uses the trait and keeps the counters in the shared LMDB store, so the
-`{cachetags}` table is never queried. `DrustServiceProvider` swaps the
+`{cachetags}` table is never queried. `RebarServiceProvider` swaps the
 `cache_tags.invalidator.checksum` service when
-`$settings['drust']['cache_tags'] === 'shared'`. Verified on drupal02 with 4
+`$settings['rebar']['cache_tags'] === 'shared'`. Verified on drupal02 with 4
 FPM workers: editing a node from Drush updated its page and the front page
 listing on every worker immediately.
 
@@ -93,7 +93,7 @@ every call names the store it means.
 
 ### Service swaps compiled into the container must not depend on the process
 Drupal caches the compiled container and shares it between Drush and the web
-workers. If `DrustServiceProvider` checked `extension_loaded()`, a Drush run
+workers. If `RebarServiceProvider` checked `extension_loaded()`, a Drush run
 without the extension could compile a container without the Rust checksum
 service, which the web workers would then use. The swap depends on settings
 only; a process without the extension fails loudly (undefined function)
@@ -118,7 +118,7 @@ one lookup and bootstrap dominates.
 Production-like setup: Ubuntu 26.04, 4 vCPU, PHP 8.5.4 FPM, MariaDB 11.8 on
 localhost, APCu installed. Both sites identical (Drupal 11.4.7, same modules,
 same generated content) with identical dedicated pools (`pm = static`, 4
-workers); only drupal02's pool loads `drust.so`, with every cache bin in the
+workers); only drupal02's pool loads `rebar.so`, with every cache bin in the
 shared LMDB store. `ab` over loopback, 300 requests, concurrency 4, sites
 measured alternately, median of rounds (`bench/remote-bench.sh`,
 `bench/summarize.py`).
@@ -201,12 +201,12 @@ is small. ms per request, inclusive (`bench/profile/families.py`):
 | Masterminds HTML5 parser (pure PHP) | 0.12 | 1.89 | 0.13 | 0 |
 | text filters | 0 | 2.04 | 0 | 0 |
 | cache reads (`RustBackend::getMultiple`, PHP side) | 1.25 | 2.57 | 1.55 | 0.10 |
-| Rust calls (`drust_*`) | ~0 | ~0 | ~0 | ~0 |
+| Rust calls (`rebar_*`) | ~0 | ~0 | ~0 | ~0 |
 | database queries | 0.96 | 1.83 | 1.03 | 0.32 |
 | container get/create | 1.99 | 2.51 | 2.20 | 0.52 |
 | class autoloading | 0.74 | 1.32 | 0.82 | 0.20 |
 
-- The Rust store is effectively free: `drust_*` calls got almost no samples.
+- The Rust store is effectively free: `rebar_*` calls got almost no samples.
   What remains of cache reads is PHP work around them (unserialize, object
   `__wakeup`, checksum checks).
 - The node page renders the comment form on every request (a BigPipe
@@ -320,7 +320,7 @@ configuration.
 PHP-FPM and `php -S` with `PHP_CLI_SERVER_WORKERS` fork workers from a master.
 An LMDB environment opened before `fork()` must not be used, or even closed,
 by the child (closing releases the parent's reader slot). The store records
-the PID that opened it; `drust_shared_open()` reopens in a new process and
+the PID that opened it; `rebar_shared_open()` reopens in a new process and
 deliberately leaks (`mem::forget`) the inherited handle. The store is only
 ever opened lazily from a request, never at module startup, so the FPM master
 never holds one.
@@ -335,7 +335,7 @@ the real cid, so callers never see the hash.
 An LMDB map on tmpfs is sparse, but writing past the tmpfs size kills the
 process with SIGBUS instead of returning an error. `bin/dev` runs containers
 with `--shm-size=1g`; on a real host, make sure the tmpfs is larger than
-`$settings['drust']['shared_size_mb']`.
+`$settings['rebar']['shared_size_mb']`.
 
 ### default_backend tags outrank $settings['cache']['default']
 `CacheFactory::get()` picks, in order: `$settings['cache']['bins'][$bin]`, the
@@ -347,7 +347,7 @@ as APCu in front of the Rust store. Map them explicitly in
 ChainedFast falls through to the default backend.
 
 ### A PHP extension can be loaded for one FPM pool only
-`php_admin_value[extension] = /path/drust.so` in a pool file loads it in that
+`php_admin_value[extension] = /path/rebar.so` in a pool file loads it in that
 pool's workers only (verified via `/proc/<pid>/maps`: 4 of 4 drupal02 workers,
 0 of drupal01's and the shared `www` pool's). That keeps Rust code away from
 every other site on a shared server. The CLI needs the same:
@@ -356,7 +356,7 @@ CLI run lacks the extension, since that process would use a different cache
 backend than the web workers.
 
 ### Build the production extension in Docker under emulation
-`bin/build-ext-linux` builds `drust.so` for linux/amd64 with the official
+`bin/build-ext-linux` builds `rebar.so` for linux/amd64 with the official
 `php:8.5` image on an arm64 Mac (Rust build about 40s under emulation, after
 a slow first image build). Built against 8.5.10 headers, it loads on the
 server's 8.5.4: extensions are compatible across patch releases (same
@@ -369,9 +369,9 @@ identically: no memory between benchmarks, and the benchmark warm-up spawns
 all workers before measuring.
 
 ### Replace a loaded extension by rename, never in place
-FPM workers have `drust.so` memory-mapped. Overwriting the file in place (as
+FPM workers have `rebar.so` memory-mapped. Overwriting the file in place (as
 `scp` does) truncates pages under running processes, which can crash them.
-`bin/deploy-drupal02` uploads `drust.so.new` and `mv`s it over (workers keep
+`bin/deploy-drupal02` uploads `rebar.so.new` and `mv`s it over (workers keep
 the old inode), then reloads FPM so new workers map the new file.
 
 ### Cargo doesn't notice a PHP version change
@@ -385,9 +385,17 @@ use a cargo target directory per PHP minor version.
 The first per-version target dir used `$(php-config --phpapi)`, which prints
 usage text, and cargo then failed with "failed to join paths from
 $LD_LIBRARY_PATH" (the colon in it). The fallback `$(php -r ...)` then
-captured the stale `drust.so` startup warning, which PHP prints to stdout. Use
+captured the stale `rebar.so` startup warning, which PHP prints to stdout. Use
 `php -n -r 'echo PHP_MAJOR_VERSION, ".", PHP_MINOR_VERSION;'`: `-n` skips ini
 files and so never loads the extension.
+
+### pgrep -f matches the shell running it
+Checking which FPM workers had the extension loaded with
+`pgrep -f "php-fpm: pool drupal02"` over SSH kept reporting one "worker"
+without it, with a new PID each time. It was the `bash` running the check,
+whose own command line contains the pattern. It had been explained away as an
+old worker exiting after a reload. Filter by process name instead:
+`pgrep -x php-fpm8.5`, then match `/proc/<pid>/cmdline`.
 
 ### ab counts varying page lengths as failures
 Logged-in pages carry per-request form tokens, so `ab` reported "failed"
@@ -395,7 +403,7 @@ requests for length mismatches. Use `ab -l`.
 
 ### Several extensions in one FPM pool
 Repeated `php_admin_value[extension] = ...` lines in a pool file all load
-(verified: drust and excimer both mapped in the pool's workers); a later line
+(verified: `rebar.so` and `excimer.so` both mapped in the pool's workers); a later line
 does not override an earlier one.
 
 ## ext-php-rs notes

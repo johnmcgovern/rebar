@@ -1,5 +1,5 @@
 #!/bin/sh
-# Build drust.so for a Linux server, in Docker, into ext/dist/.
+# Build rebar.so for a Linux server, in Docker, into ext/dist/.
 #   PHP_VERSION  the server's PHP minor version (default 8.5)
 #   PLATFORM     the server's platform (default linux/amd64; or linux/arm64)
 # Cross-platform builds run under emulation, so the first one is slow.
@@ -8,15 +8,15 @@ set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PHP_VERSION="${PHP_VERSION:-8.5}"
 PLATFORM="${PLATFORM:-linux/amd64}"
-TAG="drust-dev:$(echo "$PLATFORM" | tr / -)-php$PHP_VERSION"
+TAG="rebar-dev:$(echo "$PLATFORM" | tr / -)-php$PHP_VERSION"
 VOL="$(echo "$PLATFORM" | tr / -)"
 docker build --platform "$PLATFORM" --build-arg PHP_VERSION="$PHP_VERSION" -t "$TAG" "$ROOT/docker"
 mkdir -p "$ROOT/ext/dist"
 docker run --rm --platform "$PLATFORM" -v "$ROOT":/work \
-  -v "drust-cargo-$VOL":/usr/local/cargo/registry -v "drust-target-$VOL":/work/ext/target \
+  -v "rebar-cargo-$VOL":/usr/local/cargo/registry -v "rebar-target-$VOL":/work/ext/target \
   -w /work/ext "$TAG" sh -c '
     export CARGO_TARGET_DIR=target/php$(php -n -r "echo PHP_MAJOR_VERSION, \".\", PHP_MINOR_VERSION;")
     cargo build --release
     V=$(php -n -r "echo PHP_MAJOR_VERSION.\".\".PHP_MINOR_VERSION;")
-    cp $CARGO_TARGET_DIR/release/libdrust.so dist/drust-php$V-$(uname -m).so
-    php -n -d extension=$PWD/dist/drust-php$V-$(uname -m).so -r "echo drust_hello(\"built\"), \" | \", php_uname(\"m\"), \" | PHP \", PHP_VERSION, PHP_EOL;"'
+    cp $CARGO_TARGET_DIR/release/librebar.so dist/rebar-php$V-$(uname -m).so
+    php -n -d extension=$PWD/dist/rebar-php$V-$(uname -m).so -r "echo rebar_hello(\"built\"), \" | \", php_uname(\"m\"), \" | PHP \", PHP_VERSION, PHP_EOL;"'

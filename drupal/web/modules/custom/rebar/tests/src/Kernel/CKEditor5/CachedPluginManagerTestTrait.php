@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Drupal\Tests\drust\Kernel\CKEditor5;
+namespace Drupal\Tests\rebar\Kernel\CKEditor5;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
-use Drupal\drust\CKEditor5\CachedCKEditor5PluginManager;
+use Drupal\rebar\CKEditor5\CachedCKEditor5PluginManager;
 
 /**
  * Runs a core CKEditor 5 kernel test with the caching plugin manager.
@@ -17,7 +17,7 @@ trait CachedPluginManagerTestTrait {
    */
   public function register(ContainerBuilder $container): void {
     parent::register($container);
-    // What DrustServiceProvider does when ckeditor5_cache is on; the drust
+    // What RebarServiceProvider does when ckeditor5_cache is on; the rebar
     // module itself isn't enabled in these tests.
     if ($container->hasDefinition('plugin.manager.ckeditor5.plugin')) {
       $container->getDefinition('plugin.manager.ckeditor5.plugin')->setClass(CachedCKEditor5PluginManager::class);

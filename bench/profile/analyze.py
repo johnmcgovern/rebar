@@ -18,7 +18,7 @@ nreq = int(sys.argv[3]) if len(sys.argv) > 3 else None
 # Innermost frame matching wins. Order matters only for ties in one frame.
 BUCKETS = [
     ("database (PDO)", re.compile(r"^PDO|PDOStatement|StatementWrapperIterator::execute|Connection::query")),
-    ("drust (Rust)", re.compile(r"^drust_")),
+    ("rebar (Rust)", re.compile(r"^rebar_")),
     ("cache (unserialize)", re.compile(r"^unserialize$")),
     ("autoload/includes", re.compile(r"ClassLoader|^Composer|require|include|spl_autoload")),
     ("twig render", re.compile(r"^__TwigTemplate_|Twig\\")),

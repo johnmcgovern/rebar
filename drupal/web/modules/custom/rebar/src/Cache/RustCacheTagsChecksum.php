@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\drust\Cache;
+namespace Drupal\rebar\Cache;
 
 use Drupal\Core\Cache\CacheTagsChecksumInterface;
 use Drupal\Core\Cache\CacheTagsChecksumPreloadInterface;
@@ -11,7 +11,7 @@ use Drupal\Core\Database\Connection;
 use Drupal\Core\Site\Settings;
 
 /**
- * Cache tag invalidation counters kept in the drust shared (LMDB) store.
+ * Cache tag invalidation counters kept in the rebar shared (LMDB) store.
  *
  * Replaces \Drupal\Core\Cache\DatabaseCacheTagsChecksum. Core's trait still
  * does the per-request caching, preloading and delaying of invalidations until
@@ -19,8 +19,8 @@ use Drupal\Core\Site\Settings;
  * {cachetags} table. Every counter is offset by the store's random epoch, so
  * a flushed or wiped store can never make stale items look valid again.
  *
- * Enable with $settings['drust']['cache_tags'] = 'shared' (see
- * DrustServiceProvider).
+ * Enable with $settings['rebar']['cache_tags'] = 'shared' (see
+ * RebarServiceProvider).
  */
 class RustCacheTagsChecksum implements CacheTagsChecksumInterface, CacheTagsInvalidatorInterface, CacheTagsChecksumPreloadInterface, CacheTagsPurgeInterface {
 
@@ -42,21 +42,21 @@ class RustCacheTagsChecksum implements CacheTagsChecksumInterface, CacheTagsInva
     string $site_path,
   ) {
     $this->store = RustBackendFactory::openSharedStore();
-    $this->bin = Settings::getApcuPrefix('drust_backend', $root, $site_path) . '::cachetags';
+    $this->bin = Settings::getApcuPrefix('rebar_backend', $root, $site_path) . '::cachetags';
   }
 
   /**
    * {@inheritdoc}
    */
   protected function getTagInvalidationCounts(array $tags) {
-    return drust_tags_get($this->store, $this->bin, array_values($tags));
+    return rebar_tags_get($this->store, $this->bin, array_values($tags));
   }
 
   /**
    * {@inheritdoc}
    */
   protected function doInvalidateTags(array $tags) {
-    drust_tags_invalidate($this->store, $this->bin, array_values($tags));
+    rebar_tags_invalidate($this->store, $this->bin, array_values($tags));
   }
 
   /**
@@ -70,7 +70,7 @@ class RustCacheTagsChecksum implements CacheTagsChecksumInterface, CacheTagsInva
    * {@inheritdoc}
    */
   public function purge(): void {
-    drust_tags_purge($this->store, $this->bin);
+    rebar_tags_purge($this->store, $this->bin);
     $this->reset();
   }
 

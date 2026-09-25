@@ -1,29 +1,29 @@
 #!/bin/sh
 # Sets up the local dev site from a fresh clone: dev image, Composer
 # dependencies, the extension, a Drupal install on SQLite with the recipes
-# the benchmarks use, the drust module and test content.
+# the benchmarks use, the rebar module and test content.
 set -e
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DEV="$ROOT/bin/dev"
 SITE="$ROOT/drupal/web/sites/default"
 [ -f "$SITE/files/.ht.sqlite" ] && { echo "Site already installed ($SITE/files/.ht.sqlite)." >&2; exit 1; }
 
-docker build -t drust-dev "$ROOT/docker"
+docker build -t rebar-dev "$ROOT/docker"
 "$DEV" composer install --no-interaction
 "$ROOT/bin/build-ext"
 
-"$DEV" vendor/bin/drush site:install standard -y --site-name=Drust --account-pass=admin \
+"$DEV" vendor/bin/drush site:install standard -y --site-name=Rebar --account-pass=admin \
   --db-url=sqlite://localhost//work/drupal/web/sites/default/files/.ht.sqlite
 # Drupal 11.4's standard profile no longer creates content types.
 for r in standard article_tags article_comment page_content_type; do
   "$DEV" vendor/bin/drush recipe:apply "/work/drupal/web/core/recipes/$r" -q
 done
 
-# Load drust's dev settings (settings.php itself isn't committed).
+# Load rebar's dev settings (settings.php itself isn't committed).
 chmod u+w "$SITE" "$SITE/settings.php"
-printf "\n// drust dev settings.\ninclude \$app_root . '/' . \$site_path . '/settings.drust-dev.php';\n" >> "$SITE/settings.php"
+printf "\n// rebar dev settings.\ninclude \$app_root . '/' . \$site_path . '/settings.rebar-dev.php';\n" >> "$SITE/settings.php"
 chmod a-w "$SITE" "$SITE/settings.php"
 
-"$DEV" vendor/bin/drush en drust -y
+"$DEV" vendor/bin/drush en rebar -y
 "$DEV" vendor/bin/drush php:script /work/bench/generate.php
 echo "Done. Admin login: admin / admin. Try: bin/dev vendor/bin/drush status"

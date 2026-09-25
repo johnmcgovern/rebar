@@ -1,12 +1,12 @@
 <?php
 
-namespace Drupal\drust;
+namespace Drupal\rebar;
 
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\DependencyInjection\ServiceModifierInterface;
 use Drupal\Core\Site\Settings;
-use Drupal\drust\Cache\RustCacheTagsChecksum;
-use Drupal\drust\CKEditor5\CachedCKEditor5PluginManager;
+use Drupal\rebar\Cache\RustCacheTagsChecksum;
+use Drupal\rebar\CKEditor5\CachedCKEditor5PluginManager;
 use Symfony\Component\DependencyInjection\Reference;
 
 /**
@@ -17,13 +17,13 @@ use Symfony\Component\DependencyInjection\Reference;
  * a Drush run without it would otherwise compile a container the web workers
  * then use. A process without the extension fails loudly instead.
  */
-class DrustServiceProvider implements ServiceModifierInterface {
+class RebarServiceProvider implements ServiceModifierInterface {
 
   /**
    * {@inheritdoc}
    */
   public function alter(ContainerBuilder $container) {
-    $settings = Settings::get('drust', []);
+    $settings = Settings::get('rebar', []);
     if (($settings['cache_tags'] ?? NULL) === 'shared') {
       $container->getDefinition('cache_tags.invalidator.checksum')
         ->setClass(RustCacheTagsChecksum::class)

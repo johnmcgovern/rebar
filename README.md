@@ -1,15 +1,16 @@
-# drust
+# Rebar
 
 **Rust underneath Drupal: faster core services, with no changes to contrib.**
 
-drust replaces some of Drupal's core services with faster implementations,
+Rebar replaces some of Drupal's core services with faster implementations,
 most of them in Rust, compiled into a PHP extension. Each one swaps in behind
 an interface Drupal already has, so core, contrib modules and themes keep
-working unchanged. It's an experiment, and "drust" is a working name.
+working unchanged. It's an experiment. It was called "drust" until September
+2026; raw benchmark output in `bench/*.txt` still uses that name.
 
-On a stock Drupal 11.4 site, drust made every tested page 13–38% faster:
+On a stock Drupal 11.4 site, Rebar made every tested page 13–38% faster:
 
-| Page | Stock req/s | With drust | Change |
+| Page | Stock req/s | With Rebar | Change |
 |---|---|---|---|
 | Node with comment form, logged in | 150 | 206 | +37.6% |
 | Taxonomy term, logged in | 345 | 428 | +24.1% |
@@ -22,7 +23,7 @@ median of 5 rounds with `ab`. Full numbers, method and caveats are in
 
 ## What it replaces
 
-| Component | Stock Drupal | drust |
+| Component | Stock Drupal | Rebar |
 |---|---|---|
 | Cache storage (all bins) | Database tables, APCu for 4 bins | Rust: an LMDB store in `/dev/shm`, shared by all PHP processes on the machine |
 | Cache-tag checksums | The `cachetags` database table | Rust: counters in the same store, offset by a random epoch so a wiped store can't make stale data look valid |
@@ -34,8 +35,8 @@ Each is switched on separately in `settings.php`.
 
 ```mermaid
 flowchart TD
-  A[Drupal core, contrib, themes] -->|call core interfaces| B[drust module<br/>PHP adapters]
-  B -->|drust_* functions| C[drust.so<br/>Rust, ext-php-rs]
+  A[Drupal core, contrib, themes] -->|call core interfaces| B[rebar module<br/>PHP adapters]
+  B -->|rebar_* functions| C[rebar.so<br/>Rust, ext-php-rs]
   C --> D[(LMDB store<br/>/dev/shm)]
   B -.->|service swaps| E[CacheBackendInterface<br/>CacheTagsChecksumInterface<br/>CKEditor5PluginManager]
 ```
@@ -46,12 +47,12 @@ and core's own transaction handling for tag invalidation. Rust owns storage,
 expiry, invalidation and the counters.
 
 Every swap is checked against **Drupal core's own test suites**, run
-unmodified against the drust implementation: core's cache-backend
+unmodified against the Rebar implementation: core's cache-backend
 conformance suite and four CKEditor 5 kernel test classes, 195 tests in all.
 
 ## Getting started
 
-See **[INSTALL.md](INSTALL.md)** to add drust to an existing Drupal 11 site:
+See **[INSTALL.md](INSTALL.md)** to add Rebar to an existing Drupal 11 site:
 build the extension for your PHP, install the module, load the extension for
 your site's PHP processes, and switch features on.
 
@@ -62,7 +63,7 @@ Requirements: Drupal 11, PHP 8.3+ (NTS) on Linux, a single web server.
 | Path | What |
 |---|---|
 | `ext/` | The Rust PHP extension (`src/store.rs`, `src/shared.rs`, `src/lib.rs`) |
-| `drupal/web/modules/custom/drust/` | The Drupal module and its tests |
+| `drupal/web/modules/custom/rebar/` | The Drupal module and its tests |
 | `drupal/` | A local Drupal 11 test site (SQLite) |
 | `docker/` | Dev image: PHP 8.5 + Rust + Composer |
 | `bin/` | `setup-dev`, `dev`, `build-ext`, `build-ext-linux`, `bench`, `deploy-drupal02` |
@@ -76,23 +77,23 @@ Everything runs in Docker; nothing needs installing on your machine.
 
 ```sh
 bin/setup-dev                        # from a fresh clone: image, Composer, extension, site, content
-bin/build-ext                        # rebuild ext/drust.so after changing Rust code
+bin/build-ext                        # rebuild ext/rebar.so after changing Rust code
 bin/dev vendor/bin/drush status      # run anything against the local site
 
-# The test suite (core's suites against drust, plus drust's own):
+# The test suite (core's suites against rebar, plus rebar's own):
 bin/dev sh -c 'SIMPLETEST_DB=sqlite://localhost//tmp/test.sqlite \
   SIMPLETEST_BASE_URL=http://localhost vendor/bin/phpunit \
-  -c web/core/phpunit.xml.dist web/modules/custom/drust/tests'
+  -c web/core/phpunit.xml.dist web/modules/custom/rebar/tests'
 ```
 
 `bin/setup-dev` installs the local site with the `standard` profile plus the
 `standard`, `article_tags`, `article_comment` and `page_content_type` recipes
-(in Drupal 11.4 the profile no longer creates content types), enables drust and
+(in Drupal 11.4 the profile no longer creates content types), enables the rebar module and
 generates 100 tagged articles with 300 comments. Admin login: `admin` /
 `admin`. The site's `settings.php` isn't committed (it holds the hash salt);
-drust's dev settings are in `sites/default/settings.drust-dev.php`.
+Rebar's dev settings are in `sites/default/settings.rebar-dev.php`.
 
-Locally, the `DRUST_CACHE` environment variable picks the cache mode:
+Locally, the `REBAR_CACHE` environment variable picks the cache mode:
 
 - `1`: every bin in Rust, private to one PHP process. Fastest, but other
   processes (Drush, other workers) never see its writes.
@@ -100,14 +101,14 @@ Locally, the `DRUST_CACHE` environment variable picks the cache mode:
 - `shared`: the shared LMDB store, consistent across processes.
 - unset: core's database backend.
 
-`bin/bench` compares them. `/admin/reports/drust` shows the stores' contents.
+`bin/bench` compares them. `/admin/reports/rebar` shows the stores' contents.
 
 For a Linux server, `PHP_VERSION=8.5 PLATFORM=linux/amd64 bin/build-ext-linux`
-builds `ext/dist/drust-php8.5-x86_64.so`.
+builds `ext/dist/rebar-php8.5-x86_64.so`.
 
 ### The benchmark setup
 
-`drupal01.example.com` is stock Drupal, `drupal02.example.com` runs drust;
+`drupal01.example.com` is stock Drupal, `drupal02.example.com` runs Rebar;
 they're otherwise identical. `bin/deploy-drupal02` deploys, and
 `bench/remote-bench.sh` (on the server) benchmarks both alternately, running
 cron to completion first. `bench/summarize.py` prints medians and each site's

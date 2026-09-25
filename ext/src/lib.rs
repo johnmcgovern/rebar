@@ -1,11 +1,11 @@
-//! drust: Rust-backed services for Drupal, exposed as a PHP extension.
+//! Rebar: Rust-backed services for Drupal, exposed as a PHP extension.
 //!
-//! The PHP side (the `drust` Drupal module) implements Drupal's interfaces and
+//! The PHP side (the `rebar` Drupal module) implements Drupal's interfaces and
 //! delegates storage and bookkeeping to the functions defined here, so contrib
 //! code never knows the difference.
 //!
 //! Cache functions take a store: "local" (private to the PHP process) or the
-//! path of a shared LMDB store, opened first with drust_shared_open().
+//! path of a shared LMDB store, opened first with rebar_shared_open().
 
 mod shared;
 mod store;
@@ -32,19 +32,19 @@ fn with_store<R>(store: &str, f: impl FnOnce(&dyn Store) -> StoreResult<R>) -> P
 
 /// Returns a short banner so PHP can confirm the Rust extension is loaded.
 #[php_function]
-pub fn drust_hello(name: &str) -> String {
+pub fn rebar_hello(name: &str) -> String {
     format!("Hello {name}, from Rust {}", env!("CARGO_PKG_VERSION"))
 }
 
 /// Opens the shared store for this process (no-op if already open).
 #[php_function]
-pub fn drust_shared_open(path: &str, map_size_mb: i64) -> PhpResult<()> {
+pub fn rebar_shared_open(path: &str, map_size_mb: i64) -> PhpResult<()> {
     shared::open(path, map_size_mb.max(1) as usize * 1024 * 1024).map_err(PhpException::from)
 }
 
 /// Stores one item in a bin.
 #[php_function]
-pub fn drust_cache_set(
+pub fn rebar_cache_set(
     store: &str,
     bin: &str,
     cid: &str,
@@ -63,7 +63,7 @@ pub fn drust_cache_set(
 /// for every item found; validity (expiry, tags) is decided on the PHP side
 /// because it needs the request time and the checksum provider.
 #[php_function]
-pub fn drust_cache_get_multiple(
+pub fn rebar_cache_get_multiple(
     store: &str,
     bin: &str,
     cids: Vec<String>,
@@ -91,19 +91,19 @@ pub fn drust_cache_get_multiple(
 }
 
 #[php_function]
-pub fn drust_cache_delete_multiple(store: &str, bin: &str, cids: Vec<String>) -> PhpResult<()> {
+pub fn rebar_cache_delete_multiple(store: &str, bin: &str, cids: Vec<String>) -> PhpResult<()> {
     with_store(store, |s| s.delete_multiple(bin, &cids))
 }
 
 /// Removes every item in a bin (deleteAll() and removeBin()).
 #[php_function]
-pub fn drust_cache_delete_all(store: &str, bin: &str) -> PhpResult<()> {
+pub fn rebar_cache_delete_all(store: &str, bin: &str) -> PhpResult<()> {
     with_store(store, |s| s.delete_all(bin))
 }
 
 /// Marks items invalid by moving their expiry into the past.
 #[php_function]
-pub fn drust_cache_invalidate_multiple(
+pub fn rebar_cache_invalidate_multiple(
     store: &str,
     bin: &str,
     cids: Vec<String>,
@@ -114,19 +114,19 @@ pub fn drust_cache_invalidate_multiple(
 
 /// Marks every item in a bin invalid (deprecated invalidateAll()).
 #[php_function]
-pub fn drust_cache_invalidate_all(store: &str, bin: &str, request_time: i64) -> PhpResult<()> {
+pub fn rebar_cache_invalidate_all(store: &str, bin: &str, request_time: i64) -> PhpResult<()> {
     with_store(store, |s| s.set_expire(bin, None, request_time - 1))
 }
 
 /// Drops expired items from a bin; returns how many were removed.
 #[php_function]
-pub fn drust_cache_garbage_collection(store: &str, bin: &str, request_time: i64) -> PhpResult<i64> {
+pub fn rebar_cache_garbage_collection(store: &str, bin: &str, request_time: i64) -> PhpResult<i64> {
     with_store(store, |s| s.garbage_collection(bin, request_time)).map(|n| n as i64)
 }
 
 /// Process-wide counters plus per-bin item counts and payload bytes.
 #[php_function]
-pub fn drust_cache_stats(store: &str) -> PhpResult<ZBox<ZendHashTable>> {
+pub fn rebar_cache_stats(store: &str) -> PhpResult<ZBox<ZendHashTable>> {
     let bins_stats = with_store(store, |s| s.stats())?;
     let mut bins = ZendHashTable::new();
     for b in bins_stats {
@@ -152,7 +152,7 @@ pub fn drust_cache_stats(store: &str) -> PhpResult<ZBox<ZendHashTable>> {
 /// Cache tag invalidation counters, in a shared store (counters must be
 /// visible to every process). Returns tag => epoch + count for every tag.
 #[php_function]
-pub fn drust_tags_get(store: &str, bin: &str, tags: Vec<String>) -> PhpResult<ZBox<ZendHashTable>> {
+pub fn rebar_tags_get(store: &str, bin: &str, tags: Vec<String>) -> PhpResult<ZBox<ZendHashTable>> {
     let counts = shared::with(store, |s| s.tag_counts(bin, &tags)).map_err(PhpException::from)?;
     let mut out = ZendHashTable::with_capacity(tags.len() as u32);
     for (tag, n) in tags.iter().zip(counts) {
@@ -163,30 +163,30 @@ pub fn drust_tags_get(store: &str, bin: &str, tags: Vec<String>) -> PhpResult<ZB
 
 /// Increments the invalidation counter of each tag.
 #[php_function]
-pub fn drust_tags_invalidate(store: &str, bin: &str, tags: Vec<String>) -> PhpResult<()> {
+pub fn rebar_tags_invalidate(store: &str, bin: &str, tags: Vec<String>) -> PhpResult<()> {
     shared::with(store, |s| s.invalidate_tags(bin, &tags)).map_err(PhpException::from)
 }
 
 /// Deletes all tag counters in a bin and starts a new epoch.
 #[php_function]
-pub fn drust_tags_purge(store: &str, bin: &str) -> PhpResult<()> {
+pub fn rebar_tags_purge(store: &str, bin: &str) -> PhpResult<()> {
     shared::with(store, |s| s.purge_tags(bin)).map_err(PhpException::from)
 }
 
 #[php_module]
 pub fn get_module(module: ModuleBuilder) -> ModuleBuilder {
     module
-        .function(wrap_function!(drust_hello))
-        .function(wrap_function!(drust_shared_open))
-        .function(wrap_function!(drust_cache_set))
-        .function(wrap_function!(drust_cache_get_multiple))
-        .function(wrap_function!(drust_cache_delete_multiple))
-        .function(wrap_function!(drust_cache_delete_all))
-        .function(wrap_function!(drust_cache_invalidate_multiple))
-        .function(wrap_function!(drust_cache_invalidate_all))
-        .function(wrap_function!(drust_cache_garbage_collection))
-        .function(wrap_function!(drust_cache_stats))
-        .function(wrap_function!(drust_tags_get))
-        .function(wrap_function!(drust_tags_invalidate))
-        .function(wrap_function!(drust_tags_purge))
+        .function(wrap_function!(rebar_hello))
+        .function(wrap_function!(rebar_shared_open))
+        .function(wrap_function!(rebar_cache_set))
+        .function(wrap_function!(rebar_cache_get_multiple))
+        .function(wrap_function!(rebar_cache_delete_multiple))
+        .function(wrap_function!(rebar_cache_delete_all))
+        .function(wrap_function!(rebar_cache_invalidate_multiple))
+        .function(wrap_function!(rebar_cache_invalidate_all))
+        .function(wrap_function!(rebar_cache_garbage_collection))
+        .function(wrap_function!(rebar_cache_stats))
+        .function(wrap_function!(rebar_tags_get))
+        .function(wrap_function!(rebar_tags_invalidate))
+        .function(wrap_function!(rebar_tags_purge))
 }

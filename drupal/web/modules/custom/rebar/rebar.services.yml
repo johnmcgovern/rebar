@@ -1,16 +1,16 @@
 services:
   # Rust memory private to each PHP process.
-  cache.backend.drust:
-    class: Drupal\drust\Cache\RustBackendFactory
+  cache.backend.rebar:
+    class: Drupal\rebar\Cache\RustBackendFactory
     arguments: ['%app.root%', '%site.path%', '@cache_tags.invalidator.checksum', '@datetime.time']
   # LMDB shared memory, shared by every PHP process on the machine.
-  cache.backend.drust_shared:
-    class: Drupal\drust\Cache\RustBackendFactory
+  cache.backend.rebar_shared:
+    class: Drupal\rebar\Cache\RustBackendFactory
     arguments: ['%app.root%', '%site.path%', '@cache_tags.invalidator.checksum', '@datetime.time', 'shared']
   # Rust as the fast, per-process layer in front of the database, like core
   # does with APCu. Safe with multiple PHP processes (FPM workers, Drush).
-  cache.backend.drust_chained:
+  cache.backend.rebar_chained:
     class: Drupal\Core\Cache\ChainedFastBackendFactory
-    arguments: ['@settings', 'cache.backend.database', 'cache.backend.drust']
+    arguments: ['@settings', 'cache.backend.database', 'cache.backend.rebar']
     calls:
       - [setContainer, ['@service_container']]

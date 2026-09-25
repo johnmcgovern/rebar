@@ -1,0 +1,5 @@
+name: Rebar
+type: module
+description: 'Rust-backed implementations of Drupal core services, via the rebar PHP extension.'
+package: Performance
+core_version_requirement: ^11

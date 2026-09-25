@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Drupal\Tests\drust\Kernel;
+namespace Drupal\Tests\rebar\Kernel;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\drust\Cache\RustBackend;
+use Drupal\rebar\Cache\RustBackend;
 use Drupal\KernelTests\Core\Cache\GenericCacheBackendUnitTestBase;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
@@ -14,8 +14,8 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 /**
  * Runs core's generic cache backend conformance tests against RustBackend.
  */
-#[Group('drust')]
-#[RequiresPhpExtension('drust')]
+#[Group('rebar')]
+#[RequiresPhpExtension('rebar')]
 #[RunTestsInSeparateProcesses]
 class RustBackendTest extends GenericCacheBackendUnitTestBase {
 

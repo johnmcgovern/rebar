@@ -1,5 +1,5 @@
 #!/bin/bash
-# Benchmarks drupal01 (stock) against drupal02 (drust) on server, from the
+# Benchmarks drupal01 (stock) against drupal02 (rebar) on server, from the
 # server itself over loopback. Sites are measured alternately, per path, so
 # drift over time affects both equally.
 #

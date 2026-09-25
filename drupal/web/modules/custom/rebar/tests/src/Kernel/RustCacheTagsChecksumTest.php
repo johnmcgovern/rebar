@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace Drupal\Tests\drust\Kernel;
+namespace Drupal\Tests\rebar\Kernel;
 
 use Drupal\Core\Cache\Cache;
 use Drupal\Core\Database\Database;
 use Drupal\Core\DependencyInjection\ContainerBuilder;
 use Drupal\Core\Site\Settings;
-use Drupal\drust\Cache\RustCacheTagsChecksum;
+use Drupal\rebar\Cache\RustCacheTagsChecksum;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -17,8 +17,8 @@ use Symfony\Component\DependencyInjection\Reference;
 /**
  * Runs the conformance tests with cache tag counters in Rust, plus extras.
  */
-#[Group('drust')]
-#[RequiresPhpExtension('drust')]
+#[Group('rebar')]
+#[RequiresPhpExtension('rebar')]
 #[RunTestsInSeparateProcesses]
 class RustCacheTagsChecksumTest extends SharedRustBackendTest {
 
@@ -27,8 +27,8 @@ class RustCacheTagsChecksumTest extends SharedRustBackendTest {
    */
   public function register(ContainerBuilder $container): void {
     parent::register($container);
-    $this->setSetting('drust', ['shared_path' => static::PATH, 'shared_size_mb' => 64]);
-    // What DrustServiceProvider does when $settings['drust']['cache_tags'] is
+    $this->setSetting('rebar', ['shared_path' => static::PATH, 'shared_size_mb' => 64]);
+    // What RebarServiceProvider does when $settings['rebar']['cache_tags'] is
     // 'shared'; the module itself isn't enabled in these tests.
     $container->getDefinition('cache_tags.invalidator.checksum')
       ->setClass(RustCacheTagsChecksum::class)
@@ -39,7 +39,7 @@ class RustCacheTagsChecksumTest extends SharedRustBackendTest {
    * The key the checksum service stores counters under.
    */
   protected function tagsBin(): string {
-    return Settings::getApcuPrefix('drust_backend', $this->root, $this->siteDirectory) . '::cachetags';
+    return Settings::getApcuPrefix('rebar_backend', $this->root, $this->siteDirectory) . '::cachetags';
   }
 
   /**
@@ -54,17 +54,17 @@ class RustCacheTagsChecksumTest extends SharedRustBackendTest {
    */
   public function testInvalidationDelayedUntilCommit(): void {
     $backend = $this->getCacheBackend();
-    $backend->set('tagged', 'value', Cache::PERMANENT, ['drust_txn']);
-    $before = drust_tags_get(static::PATH, $this->tagsBin(), ['drust_txn'])['drust_txn'];
+    $backend->set('tagged', 'value', Cache::PERMANENT, ['rebar_txn']);
+    $before = rebar_tags_get(static::PATH, $this->tagsBin(), ['rebar_txn'])['rebar_txn'];
 
     $transaction = Database::getConnection()->startTransaction();
-    Cache::invalidateTags(['drust_txn']);
+    Cache::invalidateTags(['rebar_txn']);
     // Not yet applied in the store, but this request must not trust the item.
-    $this->assertSame($before, drust_tags_get(static::PATH, $this->tagsBin(), ['drust_txn'])['drust_txn']);
+    $this->assertSame($before, rebar_tags_get(static::PATH, $this->tagsBin(), ['rebar_txn'])['rebar_txn']);
     $this->assertFalse($backend->get('tagged'));
     unset($transaction);
 
-    $this->assertSame($before + 1, drust_tags_get(static::PATH, $this->tagsBin(), ['drust_txn'])['drust_txn']);
+    $this->assertSame($before + 1, rebar_tags_get(static::PATH, $this->tagsBin(), ['rebar_txn'])['rebar_txn']);
     $this->assertFalse($backend->get('tagged'));
   }
 
@@ -73,7 +73,7 @@ class RustCacheTagsChecksumTest extends SharedRustBackendTest {
    */
   public function testPurgeInvalidatesTaggedItems(): void {
     $backend = $this->getCacheBackend();
-    $backend->set('tagged', 'value', Cache::PERMANENT, ['drust_purge']);
+    $backend->set('tagged', 'value', Cache::PERMANENT, ['rebar_purge']);
     $backend->set('untagged', 'value');
     $this->assertSame('value', $backend->get('tagged')->data);
 
@@ -87,10 +87,10 @@ class RustCacheTagsChecksumTest extends SharedRustBackendTest {
    */
   public function testCrossProcessInvalidation(): void {
     $backend = $this->getCacheBackend();
-    $backend->set('tagged', 'value', Cache::PERMANENT, ['drust_remote']);
+    $backend->set('tagged', 'value', Cache::PERMANENT, ['rebar_remote']);
     $this->assertSame('value', $backend->get('tagged')->data);
 
-    $script = sprintf('drust_shared_open(%1$s, 64); drust_tags_invalidate(%1$s, %2$s, ["drust_remote"]);',
+    $script = sprintf('rebar_shared_open(%1$s, 64); rebar_tags_invalidate(%1$s, %2$s, ["rebar_remote"]);',
       var_export(static::PATH, TRUE), var_export($this->tagsBin(), TRUE));
     shell_exec(PHP_BINARY . ' -r ' . escapeshellarg($script));
 

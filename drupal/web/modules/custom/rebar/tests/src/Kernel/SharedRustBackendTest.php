@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace Drupal\Tests\drust\Kernel;
+namespace Drupal\Tests\rebar\Kernel;
 
 use Drupal\Component\Datetime\TimeInterface;
-use Drupal\drust\Cache\RustBackend;
+use Drupal\rebar\Cache\RustBackend;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
@@ -13,21 +13,21 @@ use PHPUnit\Framework\Attributes\RunTestsInSeparateProcesses;
 /**
  * Runs the conformance tests against the shared (LMDB) store, plus extras.
  */
-#[Group('drust')]
-#[RequiresPhpExtension('drust')]
+#[Group('rebar')]
+#[RequiresPhpExtension('rebar')]
 #[RunTestsInSeparateProcesses]
 class SharedRustBackendTest extends RustBackendTest {
 
   /**
    * Store location for the tests, on tmpfs.
    */
-  protected const PATH = '/dev/shm/drust-test';
+  protected const PATH = '/dev/shm/rebar-test';
 
   /**
    * {@inheritdoc}
    */
   protected function createCacheBackend($bin): RustBackend {
-    drust_shared_open(static::PATH, 64);
+    rebar_shared_open(static::PATH, 64);
     return new RustBackend($bin, $this->databasePrefix, \Drupal::service('cache_tags.invalidator.checksum'), \Drupal::service(TimeInterface::class), static::PATH);
   }
 
@@ -58,10 +58,10 @@ class SharedRustBackendTest extends RustBackendTest {
 
     // A separate PHP process reads our item and writes its own.
     $script = sprintf(
-      'drust_shared_open(%s, 64);'
-      . '$r = drust_cache_get_multiple(%1$s, %2$s, ["from_test"]);'
+      'rebar_shared_open(%s, 64);'
+      . '$r = rebar_cache_get_multiple(%1$s, %2$s, ["from_test"]);'
       . 'echo unserialize($r["from_test"]["data"]);'
-      . 'drust_cache_set(%1$s, %2$s, "from_child", serialize("written by pid " . getmypid()), microtime(TRUE), -1, "", "0");',
+      . 'rebar_cache_set(%1$s, %2$s, "from_child", serialize("written by pid " . getmypid()), microtime(TRUE), -1, "", "0");',
       var_export(static::PATH, TRUE), var_export($bin, TRUE),
     );
     $output = shell_exec(PHP_BINARY . ' -r ' . escapeshellarg($script));
@@ -75,13 +75,13 @@ class SharedRustBackendTest extends RustBackendTest {
    */
   public function testMapFull(): void {
     $small = static::PATH . '-small';
-    drust_shared_open($small, 1);
+    rebar_shared_open($small, 1);
     $backend = new RustBackend('full', $this->databasePrefix, \Drupal::service('cache_tags.invalidator.checksum'), \Drupal::service(TimeInterface::class), $small);
     $payload = random_bytes(100 * 1024);
     for ($i = 0; $i < 50; $i++) {
       $backend->set("item_$i", $payload);
     }
-    $stats = drust_cache_stats($small);
+    $stats = rebar_cache_stats($small);
     $this->assertGreaterThan(0, $stats['evictions']);
     $this->assertSame($payload, $backend->get('item_49')->data);
     $this->assertFalse($backend->get('item_0'));

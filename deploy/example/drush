@@ -1,7 +1,7 @@
 #!/bin/sh
-# Drush for drupal02 with the drust extension loaded, like its FPM pool.
+# Drush for drupal02 with the rebar extension loaded, like its FPM pool.
 # Plain vendor/bin/drush would silently fall back to the database cache while
 # the web workers use the Rust shared store. Run as www-data:
 #   sudo -u www-data bin/drush cr
 SITE="$(cd "$(dirname "$0")/.." && pwd)"
-exec php -d extension="$SITE/drust/drust.so" "$SITE/vendor/bin/drush.php" --root="$SITE" "$@"
+exec php -d extension="$SITE/rebar/rebar.so" "$SITE/vendor/bin/drush.php" --root="$SITE" "$@"

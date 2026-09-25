@@ -1,5 +1,0 @@
-name: Drust
-type: module
-description: 'Rust-backed implementations of Drupal core services, via the drust PHP extension.'
-package: Performance
-core_version_requirement: ^11

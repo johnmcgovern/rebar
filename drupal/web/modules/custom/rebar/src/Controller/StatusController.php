@@ -1,9 +1,9 @@
 <?php
 
-namespace Drupal\drust\Controller;
+namespace Drupal\rebar\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\drust\Cache\RustBackendFactory;
+use Drupal\rebar\Cache\RustBackendFactory;
 use Drupal\Core\StringTranslation\ByteSizeMarkup;
 
 /**
@@ -15,11 +15,11 @@ class StatusController extends ControllerBase {
    * Renders extension and cache store statistics.
    */
   public function status(): array {
-    if (!extension_loaded('drust')) {
-      return ['#markup' => $this->t('The drust PHP extension is not loaded.')];
+    if (!extension_loaded('rebar')) {
+      return ['#markup' => $this->t('The rebar PHP extension is not loaded.')];
     }
     $build = [
-      'hello' => ['#markup' => '<p>' . drust_hello('Drupal') . '</p>'],
+      'hello' => ['#markup' => '<p>' . rebar_hello('Drupal') . '</p>'],
       '#cache' => ['max-age' => 0],
     ];
     $stores = ['local' => $this->t('Local store (this PHP process)')];
@@ -31,7 +31,7 @@ class StatusController extends ControllerBase {
       $build['shared_error'] = ['#markup' => '<p>' . $e->getMessage() . '</p>'];
     }
     foreach ($stores as $store => $title) {
-      $build[$store] = $this->storeTable(drust_cache_stats($store), $title);
+      $build[$store] = $this->storeTable(rebar_cache_stats($store), $title);
     }
     return $build;
   }

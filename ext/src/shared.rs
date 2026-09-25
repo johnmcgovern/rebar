@@ -52,7 +52,7 @@ pub fn open(path: &str, map_size: usize) -> StoreResult<()> {
             std::mem::forget(old);
         }
     }
-    std::fs::create_dir_all(path).map_err(|e| format!("drust: cannot create {path}: {e}"))?;
+    std::fs::create_dir_all(path).map_err(|e| format!("rebar: cannot create {path}: {e}"))?;
     // SAFETY: the environment is opened once per process (enforced above) and
     // the flags only give up durability, which a cache does not need.
     let env = unsafe {
@@ -80,7 +80,7 @@ pub fn with<R>(path: &str, f: impl FnOnce(&SharedStore) -> StoreResult<R>) -> St
     let stores = SHARED.lock().unwrap();
     match stores.get(path) {
         Some(s) if s.pid == std::process::id() => f(s),
-        _ => Err(format!("drust: shared store {path} not open in this process; call drust_shared_open()")),
+        _ => Err(format!("rebar: shared store {path} not open in this process; call rebar_shared_open()")),
     }
 }
 
@@ -96,7 +96,7 @@ fn new_epoch() -> u64 {
 }
 
 fn err(e: heed::Error) -> String {
-    format!("drust shared store: {e}")
+    format!("rebar shared store: {e}")
 }
 
 /// "<bin>\0" — bins never contain NUL, so this prefix selects exactly one bin.
@@ -134,7 +134,7 @@ fn encode(e: &EntryView) -> Vec<u8> {
 }
 
 fn decode(v: &[u8]) -> StoreResult<EntryView<'_>> {
-    let corrupt = || "drust shared store: corrupt entry".to_string();
+    let corrupt = || "rebar shared store: corrupt entry".to_string();
     if v.len() < HEADER {
         return Err(corrupt());
     }

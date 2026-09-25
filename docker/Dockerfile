@@ -15,6 +15,6 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 ENV RUSTUP_HOME=/usr/local/rustup CARGO_HOME=/usr/local/cargo PATH=/usr/local/cargo/bin:$PATH
 RUN curl -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal --default-toolchain stable
 
-RUN { echo 'memory_limit=512M'; echo 'opcache.enable_cli=1'; } > /usr/local/etc/php/conf.d/drust.ini
+RUN { echo 'memory_limit=512M'; echo 'opcache.enable_cli=1'; } > /usr/local/etc/php/conf.d/rebar.ini
 
 WORKDIR /work

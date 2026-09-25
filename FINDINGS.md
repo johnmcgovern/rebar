@@ -71,9 +71,9 @@ two storage primitives: read counts, increment counts. `RustCacheTagsChecksum`
 uses the trait and keeps the counters in the shared LMDB store, so the
 `{cachetags}` table is never queried. `RebarServiceProvider` swaps the
 `cache_tags.invalidator.checksum` service when
-`$settings['rebar']['cache_tags'] === 'shared'`. Verified on drupal02 with 4
-FPM workers: editing a node from Drush updated its page and the front page
-listing on every worker immediately.
+`$settings['rebar']['cache_tags'] === 'shared'`. Verified on the Rebar site
+with 4 FPM workers: editing a node from Drush updated its page and the front
+page listing on every worker immediately.
 
 ### Volatile tag counters need an epoch
 With counters in RAM, a flush or a reboot resets them to 0 while items in
@@ -114,18 +114,18 @@ Median of 150 sequential requests per URL.
 With `page_cache` on, all backends measure about 3.4ms: a page cache hit is
 one lookup and bootstrap dominates.
 
-### Experiment 2: shared Rust store on server, drupal01 vs drupal02
+### Experiment 2: shared Rust store on a server, stock vs Rebar
 Production-like setup: Ubuntu 26.04, 4 vCPU, PHP 8.5.4 FPM, MariaDB 11.8 on
 localhost, APCu installed. Both sites identical (Drupal 11.4.7, same modules,
 same generated content) with identical dedicated pools (`pm = static`, 4
-workers); only drupal02's pool loads `rebar.so`, with every cache bin in the
-shared LMDB store. `ab` over loopback, 300 requests, concurrency 4, sites
+workers); only the Rebar site's pool loads `rebar.so`, with every cache bin in
+the shared LMDB store. `ab` over loopback, 300 requests, concurrency 4, sites
 measured alternately, median of rounds (`bench/remote-bench.sh`,
 `bench/summarize.py`).
 
 A/A first (both stock), to measure noise: up to about ±5% per page.
 
-| Mode | Path | drupal01 req/s | drupal02 req/s | Change | p50 01 / 02 |
+| Mode | Path | Stock req/s | Rebar req/s | Change | p50 stock / Rebar |
 |---|---|---|---|---|---|
 | anon | `/` | 2013 | 2144 | +6.5% | 2 / 2ms |
 | anon | `/node/51` | 2210 | 2288 | +3.5% | 2 / 2ms |
@@ -136,15 +136,16 @@ A/A first (both stock), to measure noise: up to about ±5% per page.
 
 Anonymous (page cache hits) is within noise. Logged-in traffic, which runs
 through the dynamic page cache and render cache, gains 6-18%. Smaller than the
-local SQLite numbers suggested: drupal01 is a strong baseline, with MariaDB on
-localhost and APCu already holding the bootstrap/config/discovery/routes bins.
-Raw output: `bench/server-aa.txt`, `bench/server-ab-shared.txt`.
+local SQLite numbers suggested: the stock site is a strong baseline, with
+MariaDB on localhost and APCu already holding the
+bootstrap/config/discovery/routes bins. Raw output: `bench/server-aa.txt`,
+`bench/server-ab-shared.txt`.
 
-### Experiment 3: shared store plus Rust tag checksums on server
+### Experiment 3: shared store plus Rust tag checksums on the server
 Same setup as experiment 2. Median of 5 rounds; spread is max/min req/s across
 rounds (all at or below 1.32x, a clean run).
 
-| Mode | Path | drupal01 req/s | drupal02 req/s | Change | p50 01 / 02 |
+| Mode | Path | Stock req/s | Rebar req/s | Change | p50 stock / Rebar |
 |---|---|---|---|---|---|
 | anon | `/` | 1874 | 2221 | +18.5% | 2 / 2ms |
 | anon | `/node/51` | 1952 | 2215 | +13.5% | 2 / 2ms |
@@ -160,7 +161,7 @@ shared-memory read. Raw output: `bench/server-ab-shared-tags.txt`.
 ### Experiment 4: plus the CKEditor 5 plugin cache
 Median of 5 rounds, all spreads at or below 1.23x.
 
-| Mode | Path | drupal01 req/s | drupal02 req/s | Change | p50 01 / 02 |
+| Mode | Path | Stock req/s | Rebar req/s | Change | p50 stock / Rebar |
 |---|---|---|---|---|---|
 | anon | `/` | 1906 | 2346 | +23.1% | 2 / 2ms |
 | anon | `/node/51` | 2184 | 2469 | +13.0% | 2 / 1ms |
@@ -174,22 +175,23 @@ the others are unchanged within noise, as expected. Raw output:
 `bench/server-ab-ckeditor.txt`.
 
 ### The "noisy" run was automated cron, triggered by our own test content
-One full run collapsed to 16-34 req/s logged-in on both sites, including
-untouched drupal01. It was first blamed on the busy host (other services, ~1.9GB swapped out). Profiling showed the real cause: 96% of each
-slow request was `AutomatedCron` after the response was sent. Generating 100
-articles and 300 comments gave `search_cron()` hours of work (402s indexing,
-then 174s recalculating word totals on drupal01). While one cron run holds the
+One full run collapsed to 16-34 req/s logged-in on both sites, including the
+untouched stock site. It was first blamed on the busy host (other services,
+~1.9GB swapped out). Profiling showed the real cause: 96% of each slow request
+was `AutomatedCron` after the response was sent. Generating 100 articles and
+300 comments gave `search_cron()` hours of work (402s indexing, then 174s
+recalculating word totals on the stock site). While one cron run holds the
 lock, every request that ends past the 3-hour interval calls `Cron::run()`,
 fails to get the lock and logs "Attempting to re-run cron while it is already
-running" through dblog: a ~200ms insert with MariaDB busy indexing. drupal01
-logged 4,424 of these that day. Fixes: the benchmark and profile scripts now
-wait for any cron run and run cron from Drush first, so automated cron can't
-fire mid-run; and `bench/summarize.py` prints each site's max/min spread
+running" through dblog: a ~200ms insert with MariaDB busy indexing. The stock
+site logged 4,424 of these that day. Fixes: the benchmark and profile scripts
+now wait for any cron run and run cron from Drush first, so automated cron
+can't fire mid-run; and `bench/summarize.py` prints each site's max/min spread
 across rounds, so a disturbed run is visible. Lesson: after bulk content
 changes, let cron (and search indexing) finish before measuring anything.
 
 ### Profile: where logged-in time goes after the cache work
-Excimer (wall clock, 0.5ms) on drupal02, 200 requests per page after cron
+Excimer (wall clock, 0.5ms) on the Rebar site, 200 requests per page after cron
 settled; throughput while profiling matched the benchmark, so the overhead
 is small. ms per request, inclusive (`bench/profile/families.py`):
 
@@ -242,9 +244,9 @@ What had to be right:
   definitions forces a recompute.
 - Verified with core's own `CKEditor5PluginManagerTest`, `ValidatorsTest`,
   `SmartDefaultSettingsTest` and `WildcardHtmlSupportTest` run against the
-  caching manager (152 tests), and in production: drupal02's editor settings
-  (23,760 bytes, two formats) are byte-identical to stock drupal01's apart
-  from masked session tokens, on both a cache miss and a hit.
+  caching manager (152 tests), and on the server: the Rebar site's editor
+  settings (23,760 bytes, two formats) are byte-identical to the stock
+  site's apart from masked session tokens, on both a cache miss and a hit.
 
 Residual risk: a contrib plugin whose `getElementsSubset()` depends on
 something other than configuration would be cached incorrectly. None in core.
@@ -348,12 +350,12 @@ ChainedFast falls through to the default backend.
 
 ### A PHP extension can be loaded for one FPM pool only
 `php_admin_value[extension] = /path/rebar.so` in a pool file loads it in that
-pool's workers only (verified via `/proc/<pid>/maps`: 4 of 4 drupal02 workers,
-0 of drupal01's and the shared `www` pool's). That keeps Rust code away from
-every other site on a shared server. The CLI needs the same:
-`bin/drush` runs `php -d extension=...`. settings.php warns on stderr when a
-CLI run lacks the extension, since that process would use a different cache
-backend than the web workers.
+pool's workers only (verified via `/proc/<pid>/maps`: 4 of 4 of the Rebar
+site's workers, 0 of the stock site's and the shared `www` pool's). That keeps
+Rust code away from every other site on a shared server. The CLI needs the
+same: `bin/drush` runs `php -d extension=...`. settings.php warns on stderr
+when a CLI run lacks the extension, since that process would use a different
+cache backend than the web workers.
 
 ### Build the production extension in Docker under emulation
 `bin/build-ext-linux` builds `rebar.so` for linux/amd64 with the official
@@ -371,7 +373,7 @@ all workers before measuring.
 ### Replace a loaded extension by rename, never in place
 FPM workers have `rebar.so` memory-mapped. Overwriting the file in place (as
 `scp` does) truncates pages under running processes, which can crash them.
-`bin/deploy-drupal02` uploads `rebar.so.new` and `mv`s it over (workers keep
+`bin/deploy` uploads `rebar.so.new` and `mv`s it over (workers keep
 the old inode), then reloads FPM so new workers map the new file.
 
 ### Cargo doesn't notice a PHP version change
@@ -391,7 +393,7 @@ files and so never loads the extension.
 
 ### pgrep -f matches the shell running it
 Checking which FPM workers had the extension loaded with
-`pgrep -f "php-fpm: pool drupal02"` over SSH kept reporting one "worker"
+`pgrep -f "php-fpm: pool rebar"` over SSH kept reporting one "worker"
 without it, with a new PID each time. It was the `bash` running the check,
 whose own command line contains the pattern. It had been explained away as an
 old worker exiting after a reload. Filter by process name instead:

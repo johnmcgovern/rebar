@@ -1,11 +1,14 @@
 #!/bin/bash
-# Profiles drupal02 pages with Excimer (on server, with profiling enabled in
-# the drupal02 pool). Writes <site>/rebar/profile/<mode>_<page>.folded.
+# Profiles a rebar site's pages with Excimer, on its server, with profiling
+# enabled in the site's pool (see prepend.php). Writes
+# <site>/rebar/profile/<mode>_<page>.folded.
 # Usage: run.sh [requests-per-page]
+#   REBAR_HOST  the site's hostname (its nginx server_name)
+#   REBAR_ROOT  its root (default /var/www/<hostname>)
 set -euo pipefail
 N="${1:-200}"
-SITE=/var/www/drupal02.example.com
-HOST=drupal02.example.com
+HOST="${REBAR_HOST:?set REBAR_HOST}"
+SITE="${REBAR_ROOT:-/var/www/$HOST}"
 JAR=$(mktemp); trap 'rm -f "$JAR"' EXIT
 rm -f "$SITE"/rebar/profile/*.folded
 

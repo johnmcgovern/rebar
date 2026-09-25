@@ -13,3 +13,5 @@
 # Raw profiler output (~27MB, regenerable with bench/profile/run.sh); the
 # conclusions are in FINDINGS.md.
 /bench/profile/results/
+# Your server's settings for bin/deploy (template: deploy/example/deploy.env).
+/deploy.env

@@ -120,8 +120,8 @@ php_admin_value[extension] = /var/www/example.com/rebar/rebar.so
 
 If the site shares the default `www` pool with other sites, create its own
 pool first (a copy of `www.conf` with a new `[name]` and `listen` socket), and
-point the site's nginx `fastcgi_pass` at that socket. `deploy/server/` has
-the pool files used for the benchmark.
+point the site's nginx `fastcgi_pass` at that socket. `deploy/example/` has
+example pool files.
 
 Check and reload:
 
@@ -137,7 +137,7 @@ containing `extension=/var/www/example.com/rebar/rebar.so`, enabled for both
 ### CLI: a Drush wrapper
 
 With a per-pool extension, Drush needs a wrapper that loads it too. Copy
-`deploy/server/drush` to your site's `bin/drush`:
+`deploy/example/drush` to your site's `bin/drush`:
 
 ```sh
 #!/bin/sh

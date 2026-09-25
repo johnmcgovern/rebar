@@ -1,9 +1,9 @@
 
 // Rebar: Rust-backed services from the rebar PHP extension, which only the
-// drupal02 PHP-FPM pool and bin/drush load.
+// site's PHP-FPM pool and bin/drush load.
 $settings['rebar'] = [
   // Shared LMDB store on tmpfs, used by every PHP process of this site.
-  'shared_path' => '/dev/shm/rebar-drupal02',
+  'shared_path' => '/dev/shm/rebar-example',
   'shared_size_mb' => 256,
   // Cache tag invalidation counters in the shared store. This is compiled
   // into the service container, so it is set whether or not the current

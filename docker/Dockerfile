@@ -1,4 +1,4 @@
-# Dev image: PHP (matching production, server) + Rust toolchain for building
+# Dev image: PHP (matching the target server's) + Rust toolchain for building
 # ext-php-rs extensions. Trixie because Drupal 11 needs SQLite >= 3.45.
 ARG PHP_VERSION=8.5
 FROM php:${PHP_VERSION}-cli-trixie

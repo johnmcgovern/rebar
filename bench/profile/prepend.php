@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Sampling profiler hook, auto-prepended in the drupal02 FPM pool only while
+ * Sampling profiler hook, auto-prepended in the rebar site's FPM pool only while
  * profiling (see bench/profile/run.sh). Profiles only requests from localhost
  * that send "X-Rebar-Profile: <label>", appending folded stacks (wall clock,
  * so time waiting on MariaDB counts) to <site>/rebar/profile/<label>.folded.

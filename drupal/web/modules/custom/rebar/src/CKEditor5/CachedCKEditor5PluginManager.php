@@ -13,7 +13,7 @@ use Drupal\editor\EditorInterface;
  * logged-in users, e.g. every node page with a comment form), and twice per
  * editor: via getLibraries() and getJSSettings(). It evaluates plugin
  * conditions and HTML restrictions and parses allowed HTML: about 5ms per
- * request on drupal02, a quarter of the node page. The result depends only on
+ * request on the benchmark site, a quarter of the node page. The result depends only on
  * configuration, so it is cached. The per-request parts (dynamic plugin config
  * with CSRF tokens, hook_editor_js_settings_alter()) still run every time.
  *

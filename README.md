@@ -6,7 +6,8 @@ Rebar replaces some of Drupal's core services with faster implementations,
 most of them in Rust, compiled into a PHP extension. Each one swaps in behind
 an interface Drupal already has, so core, contrib modules and themes keep
 working unchanged. It's an experiment. It was called "drust" until September
-2026; raw benchmark output in `bench/*.txt` still uses that name.
+2026; raw benchmark output in `bench/*.txt` still uses that name, and labels
+the stock site `drupal01` and the Rebar site `drupal02`.
 
 On a stock Drupal 11.4 site, Rebar made every tested page 13–38% faster:
 
@@ -66,9 +67,9 @@ Requirements: Drupal 11, PHP 8.3+ (NTS) on Linux, a single web server.
 | `drupal/web/modules/custom/rebar/` | The Drupal module and its tests |
 | `drupal/` | A local Drupal 11 test site (SQLite) |
 | `docker/` | Dev image: PHP 8.5 + Rust + Composer |
-| `bin/` | `setup-dev`, `dev`, `build-ext`, `build-ext-linux`, `bench`, `deploy-drupal02` |
+| `bin/` | `setup-dev`, `dev`, `build-ext`, `build-ext-linux`, `bench`, `deploy` |
 | `bench/` | Benchmark scripts, content generator, raw results; `profile/` has the Excimer profiling tools |
-| `deploy/server/` | PHP-FPM pools, Drush wrapper and settings used on the benchmark host |
+| `deploy/example/` | Example PHP-FPM pools, Drush wrapper, settings and `bin/deploy` config |
 | [FINDINGS.md](FINDINGS.md) | Every bug, fix, gotcha and design lesson so far |
 
 ## Development
@@ -108,10 +109,12 @@ builds `ext/dist/rebar-php8.5-x86_64.so`.
 
 ### The benchmark setup
 
-`drupal01.example.com` is stock Drupal, `drupal02.example.com` runs Rebar;
-they're otherwise identical. `bin/deploy-drupal02` deploys, and
-`bench/remote-bench.sh` (on the server) benchmarks both alternately, running
-cron to completion first. `bench/summarize.py` prints medians and each site's
+Two otherwise identical sites on one server: one stock, one running Rebar.
+`bin/deploy` deploys to the Rebar site; copy `deploy/example/deploy.env` to
+`deploy.env` (gitignored) and set your server and site path first.
+`bench/remote-bench.sh` (run on the server, with `BASELINE_HOST` and
+`REBAR_HOST` set) benchmarks both alternately, running cron to completion
+first. `bench/summarize.py` prints medians and each site's
 spread across rounds; distrust runs with a large spread. `bench/profile/`
 holds the Excimer profiling hook and the scripts that summarize its output.
 

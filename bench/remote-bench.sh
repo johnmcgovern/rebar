@@ -1,22 +1,29 @@
 #!/bin/bash
-# Benchmarks drupal01 (stock) against drupal02 (rebar) on server, from the
-# server itself over loopback. Sites are measured alternately, per path, so
-# drift over time affects both equally.
+# Benchmarks a stock Drupal site against an otherwise identical one running
+# rebar, from the server itself over loopback. Sites are measured alternately,
+# per path, so drift over time affects both equally.
 #
 # Usage: remote-bench.sh [requests] [concurrency] [rounds]
-# Output: one line per (round, mode, site, path) with ab's figures.
+#   BASELINE_HOST, REBAR_HOST  the sites' hostnames (their nginx server_name)
+#   BASELINE_ROOT, REBAR_ROOT  their roots (default /var/www/<hostname>)
+#   BENCH_PATHS                space-separated paths to request (default: the
+#                              front page, a node and a term page)
+# Output: one line per (round, mode, site, path) with ab's figures; sites are
+# labelled "baseline" and "rebar".
 set -euo pipefail
 N="${1:-300}"
 C="${2:-4}"
 ROUNDS="${3:-3}"
-SITES=(drupal01 drupal02)
-PATHS=(/ /node/51 /taxonomy/term/10)
+declare -A HOST=([baseline]="${BASELINE_HOST:?set BASELINE_HOST}" [rebar]="${REBAR_HOST:?set REBAR_HOST}")
+declare -A ROOT=([baseline]="${BASELINE_ROOT:-/var/www/${HOST[baseline]}}" [rebar]="${REBAR_ROOT:-/var/www/${HOST[rebar]}}")
+SITES=(baseline rebar)
+read -r -a PATHS <<< "${BENCH_PATHS:-/ /node/51 /taxonomy/term/10}"
 JAR_DIR="$(mktemp -d)"
 trap 'rm -rf "$JAR_DIR"' EXIT
 
 drush() {
   local site=$1; shift
-  local root=/var/www/$site.example.com
+  local root=${ROOT[$site]}
   if [ -x "$root/bin/drush" ]; then
     (cd "$root" && sudo -u www-data bin/drush "$@")
   else
@@ -39,16 +46,16 @@ settle_cron() {
 
 # Logs in as user 1 via a one-time link and prints the session cookie.
 login_cookie() {
-  local site=$1 url
-  url=$(drush "$site" uli --no-browser --uri="http://$site.example.com" 2>/dev/null)
-  url="http://127.0.0.1${url#http://$site.example.com}"
-  curl -s -o /dev/null -c "$JAR_DIR/$site" -H "Host: $site.example.com" -L "$url"
+  local site=$1 host=${HOST[$1]} url
+  url=$(drush "$site" uli --no-browser --uri="http://$host" 2>/dev/null)
+  url="http://127.0.0.1${url#http://$host}"
+  curl -s -o /dev/null -c "$JAR_DIR/$site" -H "Host: $host" -L "$url"
   awk '$6 ~ /^S?SESS/ {print $6 "=" $7}' "$JAR_DIR/$site"
 }
 
 run_ab() {
   local site=$1 path=$2 cookie=$3
-  local args=(-q -l -n "$N" -c "$C" -H "Host: $site.example.com")
+  local args=(-q -l -n "$N" -c "$C" -H "Host: ${HOST[$site]}")
   [ -n "$cookie" ] && args+=(-C "$cookie")
   # Warm up: fill caches and opcache, and let every worker see the page.
   ab -q -n 40 -c "$C" "${args[@]:6}" "http://127.0.0.1$path" >/dev/null 2>&1 || true

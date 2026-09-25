@@ -1,0 +1,32 @@
+#!/bin/sh
+# Deploys rebar to a Drupal site on a server over SSH: the extension, the
+# Drupal module and bin/drush. Then reloads PHP-FPM and rebuilds Drupal's
+# caches. Build first with bin/build-ext-linux.
+#
+# Settings come from the environment, or from deploy.env at the repository
+# root (not committed; see deploy/example/deploy.env):
+#   REBAR_HOST         SSH host of the server
+#   REBAR_SITE         the site's root on the server (holds vendor/ and web/)
+#   REBAR_PHP_VERSION  the server's PHP minor version (default 8.5)
+#   REBAR_WEB_USER     the user PHP-FPM runs as (default www-data)
+# The site must already be set up as INSTALL.md describes.
+set -e
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+[ -f "$ROOT/deploy.env" ] && . "$ROOT/deploy.env"
+: "${REBAR_HOST:?set REBAR_HOST, e.g. in deploy.env}"
+: "${REBAR_SITE:?set REBAR_SITE, e.g. in deploy.env}"
+PHP_VERSION="${REBAR_PHP_VERSION:-8.5}"
+WEB_USER="${REBAR_WEB_USER:-www-data}"
+SO="$ROOT/ext/dist/rebar-php$PHP_VERSION-x86_64.so"
+[ -f "$SO" ] || { echo "missing $SO; run bin/build-ext-linux" >&2; exit 1; }
+
+# Running workers have rebar.so mapped: overwriting it in place could crash
+# them. Upload beside it and rename, so they keep the old inode until reload.
+scp -q "$SO" "$REBAR_HOST:$REBAR_SITE/rebar/rebar.so.new"
+scp -q "$ROOT/deploy/example/drush" "$REBAR_HOST:$REBAR_SITE/bin/drush"
+rsync -a --delete --exclude tests "$ROOT/drupal/web/modules/custom/rebar/" "$REBAR_HOST:$REBAR_SITE/web/modules/custom/rebar/"
+ssh -o BatchMode=yes "$REBAR_HOST" "set -e
+  chmod 644 $REBAR_SITE/rebar/rebar.so.new && mv $REBAR_SITE/rebar/rebar.so.new $REBAR_SITE/rebar/rebar.so
+  sudo systemctl reload php$PHP_VERSION-fpm
+  cd $REBAR_SITE && sudo -u $WEB_USER bin/drush cr -q
+  echo \"deployed: \$(sudo -u $WEB_USER bin/drush php:eval 'echo rebar_hello(\"deploy\");')\""
